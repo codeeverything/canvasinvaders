@@ -1,0 +1,224 @@
+<html>
+<body>
+<script type="text/javascript" src="js/player.js"></script>
+<script type="text/javascript" src="js/enemy.js"></script>
+<script type="text/javascript" src="js/bullet.js"></script>
+<script type="text/javascript" src="js/SoundManager.js"></script>
+<script type="text/javascript" src="js/game.js"></script>
+<script type="text/javascript" src="js/InteractionManager.js"></script>
+<script type="text/javascript" src="js/Graphics.js"></script>
+<style>
+	#theCanvas {
+		background-image:url('resources/space-background.jpg');
+	}
+
+	body {
+		background-color: #000;
+		margin: 0px;
+		text-align: center;
+	}
+</style>
+
+
+<canvas id="theCanvas" width="800" height="400"></canvas>
+
+<canvas id="anim" width="512" height="157" style="position: absolute; top: 0px; left: 0px; z-index:1000;"></canvas>
+
+<canvas id="star" width="100" height="100" style="position: absolute; top: 0px; left: 0px; z-index:1001; display:none;"></canvas>
+
+<script>
+
+
+
+//these functions should be moved into the game class
+function getCanvas() {
+	return document.getElementById('theCanvas');
+}
+
+function getAnim() {
+	return document.getElementById('anim');
+}
+
+function getStar() {
+	return document.getElementById('star');
+}
+
+
+
+var c = getCanvas().getContext("2d");
+
+var anim = getAnim().getContext('2d');
+var exImg = new Image();
+exImg.src = 'resources/sprites.png';
+exImg.onload = function() {
+  //alert(this.width + 'x' + this.height);
+}
+
+
+//this should be replaced by a generic animation function in the game class
+function drawExpl() {
+	// draw cropped image
+	var scale = (1 + ((Math.random() * -1) + Math.random())) / 2;	//scale between 0 and 2
+        var sourceX = 39*10;
+        var sourceY = 120;
+        var sourceWidth = 39;
+        var sourceHeight = 37;
+        var destWidth = sourceWidth * scale;//39/2;
+        var destHeight = sourceHeight * scale;//37/2;
+        var destX = 100;
+        var destY = 100;
+
+	for(var i=0; i<exAnim.length; i++) {
+		if(exAnim[i].frame > 13) {
+			exAnim[i] = null;	
+			exAnim.splice(i,1);
+			continue;
+			//exAnim[i].frame = 0;
+		}
+
+		sourceX = 39 * exAnim[i].frame;
+		destX = exAnim[i].x;
+		destY = exAnim[i].y;
+
+		if(exAnim[i].timeout) timeout=exAnim[i].timeout;
+		else timeout=1;
+		
+		//we can use the timeout function to delay animation and have explosions happen in sequence
+		(function(sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight) {
+			setTimeout(function() {
+				c.drawImage(exImg, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+			}, timeout);
+		})(sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+
+		exAnim[i].frame++;
+	}
+}
+
+var enemies = [];
+var bullets = [];
+var exAnim = [];
+
+//var stage1 = function() {
+game.stages = [function() {
+	enemies = [];
+	bullets = [];
+
+enemies.push(new enemy(350, -100, 4, function() {			this.y += 2;;		}, 336));
+enemies.push(new enemy(400, -100, 2, function() {			this.y += 2;;		}, 336));
+enemies.push(new enemy(300, -100, 4, function() {			this.y += 2;;		}, 264));
+enemies.push(new enemy(450, -100, 4, function() {			this.y += 2;;		}, 264));
+enemies.push(new enemy(150, -100, 4, function() {			this.y += 2;;		}, 216));
+enemies.push(new enemy(600, -100, 4, function() {			this.y += 2;;		}, 216));
+enemies.push(new enemy(200, -100, 2, function() {			this.y += 2;;		}, 144));
+enemies.push(new enemy(550, -100, 2, function() {			this.y += 2;;		}, 144));
+enemies.push(new enemy(300, -100, 4, function() {			this.y += 2;;		}, 72));
+enemies.push(new enemy(450, -100, 2, function() {			this.y += 2;;		}, 72));
+enemies.push(new enemy(100, -100, 2, function() {			this.y += 2;;		}, 24));
+enemies.push(new enemy(650, -100, 3, function() {			this.y += 0.2;;		}, 24));
+
+	for(var i=0; i<enemies.length; i++) {
+		enemies[i].init('resources/SM_Starship_Sprite.png');
+		enemies[i].draw(c);
+	}
+}, 
+function() {
+	enemies = [];
+	bullets = [];	
+	
+	enemies.push(new enemy(400, 20));
+	enemies.push(new enemy(100, 60, 6, function() {
+		//SINE wave, back and fore
+	
+		//move back and fore
+		if(this.x <= (0 + (this.w/2)) || this.x >= (getCanvas().width - this.w)) {
+			this.deltaX *= -1;
+			this.yPos += 50;
+		}
+	
+		this.x += this.deltaX;
+		
+	
+		// Find the sine of the angle
+		var y = Math.sin(this.x*Math.PI/90);
+		
+		// If the sine value is positive, map it above y = 100 and change the colour to blue
+		if(y >=0)
+		{
+			y = this.yPos - (y-0) * 50;
+		}
+		
+		// If the sine value is negative, map it below y = 100 and change the colour to red
+		if( y < 0 )
+		{
+			y = this.yPos + (0-y) * 50;
+		}
+		
+		this.y = y;
+	}));
+	
+	enemies[1].deltaX = 6;
+	enemies[1].yPos = 100;
+
+	enemies.push(new enemy(100, -100, 6, function() {
+		this.y += 2;
+	}, 100));
+
+	for(var i=0; i<enemies.length; i++) {
+		enemies[i].init('resources/SM_Starship_Sprite.png');
+		enemies[i].draw(c);
+	}
+},
+function() {
+	enemies = [];
+	bullets = [];	
+	
+	//wave 1
+	enemies.push(new enemy(100, -100, 6, function() {
+		this.y += 1;
+	}, 0));
+
+	enemies.push(new enemy(600, -100, 6, function() {
+		this.y += 1;
+	}, 0));
+
+
+	//wave 2
+	enemies.push(new enemy(200, -100, 6, function() {
+		this.y += 2;
+	}, 50));
+
+	enemies.push(new enemy(500, -100, 6, function() {
+		this.y += 2;
+	}, 50));
+
+	//wave 3
+	enemies.push(new enemy(300, -100, 6, function() {
+		this.y += 2;
+	}, 100));
+	
+
+	enemies.push(new enemy(400, -100, 6, function() {
+		this.y += 2;
+	}, 100));
+
+	//wave 4
+	enemies.push(new enemy(350, -100, 12, function() {
+		this.y += 2;
+	}, 150));
+
+	for(var i=0; i<enemies.length; i++) {
+		enemies[i].init('http://cdn.wikimg.net/metroidwiki/images/0/06/SM_Starship_Sprite.png');
+		enemies[i].draw(c);
+	}
+}];
+
+
+//stage1();
+game.init();
+</script>
+
+
+
+
+</body>
+</html>
